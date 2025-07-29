@@ -1,0 +1,63 @@
+# Flash Sku - EditorConfig
+# 统一代码编辑器配置
+
+root = true
+
+# 所有文件的默认配置
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+# Python 文件
+[*.py]
+indent_size = 4
+max_line_length = 88
+
+# Go 文件
+[*.go]
+indent_style = tab
+indent_size = 4
+
+# JavaScript/TypeScript 文件
+[*.{js,ts,vue}]
+indent_size = 2
+
+# JSON 文件
+[*.json]
+indent_size = 2
+
+# YAML 文件
+[*.{yml,yaml}]
+indent_size = 2
+
+# Markdown 文件
+[*.md]
+trim_trailing_whitespace = false
+
+# HTML 文件
+[*.html]
+indent_size = 2
+
+# CSS/SCSS 文件
+[*.{css,scss}]
+indent_size = 2
+
+# Shell 脚本
+[*.sh]
+indent_size = 2
+
+# Docker 文件
+[Dockerfile*]
+indent_size = 2
+
+# Makefile
+[Makefile]
+indent_style = tab
+
+# 配置文件
+[*.{conf,ini}]
+indent_size = 2

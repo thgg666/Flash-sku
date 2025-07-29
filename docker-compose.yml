@@ -1,0 +1,301 @@
+# Flash Sku - Docker Compose Configuration
+# 微服务架构的容器编排配置
+
+version: '3.8'
+
+services:
+  # API 网关 - 系统统一入口
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: flashsku_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/logs:/var/log/nginx
+      - django_static:/var/www/static:ro
+      - django_media:/var/www/media:ro
+    depends_on:
+      django:
+        condition: service_healthy
+      gin:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    networks:
+      - flashsku_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/health-check.sh"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+  # Django 业务服务 - 业务逻辑处理
+  django:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: flashsku_django
+    environment:
+      - DEBUG=True
+      - USE_ENVIRON=True
+      - SECRET_KEY=your-secret-key-here
+      - DATABASE_URL=postgresql://flashsku_user:flashsku_pass@postgres:5432/flashsku_db
+      - REDIS_URL=redis://redis:6379/0
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq:5672/
+      - EMAIL_HOST=smtp.gmail.com
+      - EMAIL_PORT=587
+      - EMAIL_USE_TLS=True
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - django_media:/app/media
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - flashsku_network
+    restart: unless-stopped
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
+             python manage.py runserver 0.0.0.0:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Celery Worker - 异步任务处理
+  celery:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: flashsku_celery
+    environment:
+      - DEBUG=True
+      - USE_ENVIRON=True
+      - SECRET_KEY=your-secret-key-here
+      - DATABASE_URL=postgresql://flashsku_user:flashsku_pass@postgres:5432/flashsku_db
+      - REDIS_URL=redis://redis:6379/0
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq:5672/
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - postgres
+      - redis
+      - rabbitmq
+    networks:
+      - flashsku_network
+    restart: unless-stopped
+    command: celery -A backend worker -l info
+
+  # Celery Beat - 定时任务调度
+  celery-beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: flashsku_celery_beat
+    environment:
+      - DEBUG=True
+      - USE_ENVIRON=True
+      - SECRET_KEY=your-secret-key-here
+      - DATABASE_URL=postgresql://flashsku_user:flashsku_pass@postgres:5432/flashsku_db
+      - REDIS_URL=redis://redis:6379/0
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq:5672/
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - postgres
+      - redis
+      - rabbitmq
+    networks:
+      - flashsku_network
+    restart: unless-stopped
+    command: celery -A backend beat -l info
+
+  # 订单消息消费者 - 处理Go服务发送的订单消息
+  order-consumer:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: flashsku_order_consumer
+    environment:
+      - DEBUG=True
+      - USE_ENVIRON=True
+      - SECRET_KEY=your-secret-key-here
+      - DATABASE_URL=postgresql://flashsku_user:flashsku_pass@postgres:5432/flashsku_db
+      - REDIS_URL=redis://redis:6379/0
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq:5672/
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - postgres
+      - redis
+      - rabbitmq
+      - celery-worker
+    networks:
+      - flashsku_network
+    restart: unless-stopped
+    command: python manage.py consume_order_messages --queue=seckill_orders --exchange=seckill --routing-key=order.created
+
+  # Go Gin 秒杀服务 - 高性能处理
+  gin:
+    build: 
+      context: ./seckill
+      dockerfile: Dockerfile
+    container_name: flashsku_gin
+    environment:
+      - GIN_MODE=debug
+      - REDIS_URL=redis://redis:6379/0
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - DATABASE_URL=postgresql://flashsku_user:flashsku_pass@postgres:5432/flashsku_db
+      - JWT_SECRET=your-jwt-secret-here
+    volumes:
+      - ./seckill:/app
+    depends_on:
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    networks:
+      - flashsku_network
+    restart: unless-stopped
+    command: ./main
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # Vue 前端应用
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: flashsku_frontend
+    environment:
+      - NODE_ENV=development
+      - VITE_API_BASE_URL=http://localhost/api
+      - VITE_SECKILL_BASE_URL=http://localhost/seckill
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    networks:
+      - flashsku_network
+    restart: unless-stopped
+    command: npm run dev -- --host 0.0.0.0
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  # PostgreSQL 主数据库
+  postgres:
+    image: postgres:15-alpine
+    container_name: flashsku_postgres
+    environment:
+      - POSTGRES_DB=flashsku_db
+      - POSTGRES_USER=flashsku_user
+      - POSTGRES_PASSWORD=flashsku_pass
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/scripts/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "5432:5432"
+    networks:
+      - flashsku_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U flashsku_user -d flashsku_db"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis 缓存服务
+  redis:
+    image: redis:7-alpine
+    container_name: flashsku_redis
+    command: redis-server --appendonly yes --requirepass flashsku_redis_pass
+    volumes:
+      - redis_data:/data
+      - ./redis/redis.conf:/etc/redis/redis.conf:ro
+    ports:
+      - "6379:6379"
+    networks:
+      - flashsku_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # RabbitMQ 消息队列
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: flashsku_rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+      - RABBITMQ_DEFAULT_VHOST=/
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+      - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+    ports:
+      - "5672:5672"   # AMQP port
+      - "15672:15672" # Management UI
+    networks:
+      - flashsku_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+
+
+# 数据卷定义
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  rabbitmq_data:
+    driver: local
+  django_media:
+    driver: local
+  django_static:
+    driver: local
+
+# 网络定义
+networks:
+  flashsku_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.25.0.0/16

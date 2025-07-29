@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>邮箱验证 - Flash Sku</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            color: #e74c3c;
+            margin-bottom: 10px;
+        }
+        .title {
+            font-size: 24px;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        .content {
+            font-size: 16px;
+            line-height: 1.8;
+            margin-bottom: 30px;
+        }
+        .verification-button {
+            display: inline-block;
+            background-color: #e74c3c;
+            color: white;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            font-size: 16px;
+            margin: 20px 0;
+            transition: background-color 0.3s;
+        }
+        .verification-button:hover {
+            background-color: #c0392b;
+        }
+        .verification-link {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #e74c3c;
+            margin: 20px 0;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            font-size: 14px;
+            color: #666;
+            text-align: center;
+        }
+        .warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .highlight {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">⚡ Flash Sku</div>
+            <h1 class="title">邮箱验证</h1>
+        </div>
+        
+        <div class="content">
+            <p>亲爱的 <span class="highlight">{{ user.username }}</span>，</p>
+            
+            <p>欢迎注册 Flash Sku 高并发秒杀平台！为了确保您的账户安全，请验证您的邮箱地址。</p>
+            
+            <p>请点击下面的按钮完成邮箱验证：</p>
+            
+            <div style="text-align: center;">
+                <a href="{{ verification_url }}" class="verification-button">
+                    验证邮箱地址
+                </a>
+            </div>
+            
+            <p>如果按钮无法点击，请复制以下链接到浏览器地址栏：</p>
+            
+            <div class="verification-link">
+                {{ verification_url }}
+            </div>
+            
+            <div class="warning">
+                <strong>⚠️ 重要提醒：</strong>
+                <ul>
+                    <li>此验证链接将在 <strong>24小时</strong> 后失效</li>
+                    <li>如果您没有注册 Flash Sku 账户，请忽略此邮件</li>
+                    <li>请勿将此链接分享给他人</li>
+                </ul>
+            </div>
+            
+            <p>验证完成后，您将可以：</p>
+            <ul>
+                <li>🛒 参与限时秒杀活动</li>
+                <li>📱 接收重要通知和优惠信息</li>
+                <li>🔐 享受完整的账户安全保护</li>
+                <li>⚡ 体验极速购物流程</li>
+            </ul>
+        </div>
+        
+        <div class="footer">
+            <p>此邮件由 Flash Sku 系统自动发送，请勿回复。</p>
+            <p>如有疑问，请联系客服：support@flashsku.com</p>
+            <p>&copy; 2025 Flash Sku. 保留所有权利。</p>
+        </div>
+    </div>
+</body>
+</html>

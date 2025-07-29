@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+
+    <!-- 基础信息 -->
+    <title>Flash Sku - 闪购秒杀平台</title>
+    <meta name="description" content="Flash Sku 是一个高性能的秒杀抢购平台，支持大规模并发的闪购活动，为用户提供极致的购物体验。">
+    <meta name="keywords" content="秒杀,抢购,闪购,购物,电商,Flash Sku">
+    <meta name="author" content="Flash Sku Team">
+
+    <!-- PWA 相关 -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#667eea">
+    <meta name="background-color" content="#ffffff">
+
+    <!-- iOS PWA 支持 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Flash Sku">
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192x192.png">
+    <link rel="apple-touch-icon" sizes="167x167" href="/icons/icon-192x192.png">
+
+    <!-- Android PWA 支持 -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="Flash Sku">
+
+    <!-- Windows PWA 支持 -->
+    <meta name="msapplication-TileColor" content="#667eea">
+    <meta name="msapplication-TileImage" content="/icons/icon-144x144.png">
+    <meta name="msapplication-config" content="/browserconfig.xml">
+
+    <!-- 图标 -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16x16.png">
+    <link rel="shortcut icon" href="/favicon.ico">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://flash-sku.com/">
+    <meta property="og:title" content="Flash Sku - 闪购秒杀平台">
+    <meta property="og:description" content="高性能的秒杀抢购平台，支持大规模并发的闪购活动">
+    <meta property="og:image" content="/icons/icon-512x512.png">
+    <meta property="og:site_name" content="Flash Sku">
+    <meta property="og:locale" content="zh_CN">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://flash-sku.com/">
+    <meta property="twitter:title" content="Flash Sku - 闪购秒杀平台">
+    <meta property="twitter:description" content="高性能的秒杀抢购平台，支持大规模并发的闪购活动">
+    <meta property="twitter:image" content="/icons/icon-512x512.png">
+
+    <!-- 安全和性能 -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta name="robots" content="index, follow">
+    <meta name="googlebot" content="index, follow">
+
+    <!-- 预加载关键资源 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="dns-prefetch" href="//api.flash-sku.com">
+
+    <!-- 样式预加载 -->
+    <link rel="preload" href="/src/main.ts" as="script" crossorigin>
+  </head>
+  <body>
+    <div id="app"></div>
+
+    <!-- 应用加载提示 -->
+    <noscript>
+      <div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;">
+        <h2>JavaScript 已被禁用</h2>
+        <p>Flash Sku 需要 JavaScript 才能正常运行，请启用 JavaScript 后重新加载页面。</p>
+      </div>
+    </noscript>
+
+    <!-- 主应用脚本 -->
+    <script type="module" src="/src/main.ts"></script>
+
+    <!-- PWA 注册脚本 -->
+    <script>
+      // 注册 Service Worker
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then((registration) => {
+              console.log('SW registered: ', registration);
+            })
+            .catch((registrationError) => {
+              console.log('SW registration failed: ', registrationError);
+            });
+        });
+      }
+
+      // 检测 PWA 安装状态
+      window.addEventListener('load', () => {
+        // 检查是否在独立模式运行
+        if (window.matchMedia('(display-mode: standalone)').matches) {
+          console.log('Running in PWA mode');
+          document.body.classList.add('pwa-mode');
+        }
+
+        // 检查是否在 iOS Safari 的主屏幕模式
+        if (window.navigator.standalone) {
+          console.log('Running in iOS standalone mode');
+          document.body.classList.add('ios-standalone');
+        }
+      });
+    </script>
+  </body>
+</html>
